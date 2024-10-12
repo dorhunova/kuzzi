@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "kuzzi"
+version = "0.1.0"
+description = ""
+authors = ["Daria Orhunova <dorhunova@n-ix.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+psycopg2 = "^2.9.9"
+python-dotenv = "^1.0.1"
+pandas = "^2.2.3"
+langchain = "^0.3.3"
+langchain-community = "^0.3.2"
+boto3 = "^1.35.37"
+openai = "^1.51.2"
+langchain-openai = "^0.2.2"
+langchain-aws = "^0.2.2"
+chromadb = "^0.5.12"
+streamlit = "^1.39.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
