@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  kuzzi_app:
+    build: .
+    # ports:
+      # - "8084:8084"
+    env_file:
+      - .env
+    volumes:
+      - ~/.aws:/root/.aws:ro  
+    environment:
+      - AWS_PROFILE=dorhunova
