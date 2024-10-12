@@ -1,5 +1,5 @@
-from abc import ABC
-from langchain.embeddings import AzureOpenAIEmbeddings, BedrockEmbeddings
+from langchain_openai import AzureOpenAIEmbeddings
+from langchain_aws import BedrockEmbeddings
 import boto3
 import os
 from dotenv import load_dotenv
