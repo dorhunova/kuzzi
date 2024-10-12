@@ -1,8 +1,13 @@
 version: '3.8'
 
 services:
-  kuzzi_app:
-    build: .
+  kuzzi:
+    image: ghcr.io/dorhunova/kuzzi
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # tags:
+      #   - kuzzi
     # ports:
       # - "8084:8084"
     env_file:
@@ -10,4 +15,5 @@ services:
     volumes:
       - ~/.aws:/root/.aws:ro  
     environment:
-      - AWS_PROFILE=dorhunova
+      - AWS_PROFILE=dorhunova-bedrock
+    
