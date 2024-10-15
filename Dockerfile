@@ -35,4 +35,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . /app
 
 # Run the application
-CMD ["python", "kuzzi/main.py"]
+# CMD ["python", "kuzzi/main.py"]
+CMD ["uvicorn", "kuzzi.main:app", "--host", "0.0.0.0", "--port", "80", "--reload"]
+
