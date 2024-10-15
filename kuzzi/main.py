@@ -2,88 +2,54 @@ import os
 from dotenv import load_dotenv
 import logging
 
-from src.connectors import PostgresConnector
-from src.embed import AzureOpenAIEmbedder, AWSBedrockEmbedder
-from src.vector_store import ChromaVectorStore
+from fastapi import FastAPI, HTTPException
 
+from src.connectors import PostgresConnector
+from src.embed import AzureOpenAIEmbedder, AWSBedrockEmbedder, create_embedder
+from src.vector_store import ChromaVectorStore, LanceDBVectorStore, create_vector_store
+from src.llm import chat_with_llm, AzureChat, BedrockChat, create_llm
+from src.train.trainer import Trainer
+from src.data_models import ChatRequest, ChatResponse
 # Load environment variables from the .env file
 load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 
-def main():
-    # Create an instance of PostgresConnector
-    pg_conn = PostgresConnector()
+app = FastAPI()
 
-    # Connect to the PostgreSQL database using environment variables
-    pg_conn.connect()
 
-    # Test query to run (this is just an example, you can adjust it based on your database schema)
-    test_query = "select * from tickets limit 10;"
+logging.info("Starting up the FastAPI application, setting up Postgres connection, creating vector store...")
+pg_conn = PostgresConnector()
+pg_conn.connect()
 
-    # Run the query and print the result
-    result = pg_conn.run(test_query)
+provider = os.getenv("PROVIDER")
+vector_store_type = os.getenv("VECTOR_STORE")
+
+embedder = create_embedder(provider)
+vector_store = create_vector_store(vector_store_type, collection_name=f"{provider}-embeddings", embedder=embedder)
+trainer = Trainer(vector_store)
+trainer.load_from_yaml(os.getenv("TRAINING_DATA_PATH"))
+chat_model = create_llm(provider)
     
-    print("Query execution result: ")
-    print(result)
+
+@app.post("/chat", response_model=ChatResponse)
+async def chat_endpoint(request: ChatRequest):
+    try:
+        response = chat_with_llm(chat_model, request.question, vector_store)
+        return ChatResponse(response=response)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/summary")
+async def summary_endpoint():
+    # Placeholder for summary functionality
+    return {"message": "Summary endpoint not implemented yet"}
+
+@app.get("/plot")
+async def plot_endpoint():
+    # Placeholder for plot functionality
+    return {"message": "Plot endpoint not implemented yet"}
     
     
-# Example usage:
-def test_embedder_azure():
-    embedder = AzureOpenAIEmbedder()
-    embedding = embedder.embed_query("Hello world")
-    print(embedding)
-
-def test_embedder_aws():
-    embedder = AWSBedrockEmbedder()
-    embedding = embedder.embed_query("Hello world")
-    print(embedding)
     
-# Example usage with Azure OpenAI and AWS Bedrock embedders
-
-def test_chroma_with_azure():
-    texts = [
-        "The capital of France is Paris.",
-        "The capital of Germany is Berlin.",
-        "The capital of Italy is Rome."
-    ]
-    query = "What is the capital of France?"
-
-    # Use Azure OpenAI Embedder
-    azure_embedder = AzureOpenAIEmbedder()
-    vector_store = ChromaVectorStore(azure_embedder, collection_name="azure_embeddings")
-
-    # Build the vector store
-    vector_store.build_vector_store(texts)
-
-    # Perform search
-    results = vector_store.search(query)
-    print("Search Results with Azure:", results)
-
-
-def test_chroma_with_bedrock():
-    texts = [
-        "The capital of France is Paris.",
-        "The capital of Germany is Berlin.",
-        "The capital of Italy is Rome."
-    ]
-    query = "What is the capital of Germany?"
-
-    # Use AWS Bedrock Embedder
-    bedrock_embedder = AWSBedrockEmbedder()
-    vector_store = ChromaVectorStore(bedrock_embedder, collection_name="bedrock_embeddings")
-
-    # Build the vector store
-    vector_store.build_vector_store(texts)
-
-    # Perform search
-    results = vector_store.search(query)
-    print("Search Results with Bedrock:", results)
-
-
-if __name__ == "__main__":
-    main()
-    # test_embedder_azure()
-    # test_embedder_aws()
-    test_chroma_with_azure()  # Test with Azure OpenAI Embedder
-    test_chroma_with_bedrock()  # Test with AWS Bedrock Embedder
+    
