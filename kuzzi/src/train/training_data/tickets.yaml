@@ -1,0 +1,112 @@
+training_data:
+  - documentation: "This dataset contains ticket information for a company's internal operations. It includes details such as ticket type, description, priority, status, and resolution details."
+  
+  - ddl: |
+      CREATE TABLE public.tickets (
+          ticket_id VARCHAR(64),
+          request_type VARCHAR(255),
+          request_title VARCHAR(255),
+          description TEXT,
+          priority VARCHAR(50),
+          status VARCHAR(50),
+          created_date DATE,
+          updated_date DATE,
+          requested_by VARCHAR(255),
+          department VARCHAR(255),
+          assigned_to VARCHAR(255),
+          category VARCHAR(255),
+          subcategory VARCHAR(255),
+          due_date DATE,
+          completion_date DATE,
+          location VARCHAR(255),
+          attachments TEXT,
+          cost_estimate DECIMAL(10, 2),
+          actual_cost DECIMAL(10, 2),
+          comments TEXT,
+          approval_status VARCHAR(50),
+          approved_by VARCHAR(255),
+          approval_date DATE,
+          sla_breach VARCHAR(10),
+          sla_target_date DATE,
+          resolution_summary TEXT
+      );
+
+  - question: "Find the number of tickets raised by each department."
+    sql: |
+      SELECT department, COUNT(*) AS ticket_count
+      FROM tickets
+      WHERE department IS NOT NULL
+      GROUP BY department;
+
+  - question: "List all high-priority tickets that are still open, including the ticket ID, request title, requested by, and created date."
+    sql: |
+      SELECT ticket_id, request_title, requested_by, created_date
+      FROM tickets
+      WHERE priority = 'High'
+        AND status = 'Open';
+
+  - question: "Find the average estimated cost and actual cost of tickets for the 'IT Support' request type."
+    sql: |
+      SELECT AVG(cost_estimate) AS average_estimated_cost, 
+             AVG(actual_cost) AS average_actual_cost
+      FROM tickets
+      WHERE request_type = 'IT Support'
+        AND cost_estimate IS NOT NULL
+        AND actual_cost IS NOT NULL;
+
+  - question: "List all tickets that have breached the SLA target date, showing the ticket ID, request title, requested by, and SLA target date."
+    sql: |
+      SELECT ticket_id, request_title, requested_by, sla_target_date
+      FROM tickets
+      WHERE sla_breach = 'Yes';
+
+  - question: "Find the number of tickets approved by each manager."
+    sql: |
+      SELECT approved_by, COUNT(*) AS tickets_approved
+      FROM tickets
+      WHERE approval_status = 'Approved'
+      AND approved_by IS NOT NULL
+      GROUP BY approved_by;
+
+  - question: "List all tickets where the request title contains the word 'Repair,' showing the ticket ID, description, request title, and resolution summary."
+    sql: |
+      SELECT ticket_id, description, request_title, resolution_summary
+      FROM tickets
+      WHERE request_title ILIKE '%Repair%';
+
+  - question: "Find all tickets that were updated within the same month they were created, showing the ticket ID, created date, and updated date."
+    sql: |
+      SELECT ticket_id, created_date, updated_date
+      FROM tickets
+      WHERE EXTRACT(MONTH FROM created_date::DATE) = EXTRACT(MONTH FROM updated_date::DATE)
+        AND updated_date IS NOT NULL;
+
+  - question: "Calculate the total actual cost of all tickets related to 'Software Installation' that have been closed."
+    sql: |
+      SELECT SUM(actual_cost) AS total_actual_cost
+      FROM tickets
+      WHERE request_type = 'Software Installation'
+        AND status = 'Closed';
+
+  - question: "Find the top 3 most common request types, showing the request type and the number of tickets."
+    sql: |
+      SELECT request_type, COUNT(*) AS ticket_count
+      FROM tickets
+      WHERE request_type IS NOT NULL
+      GROUP BY request_type
+      ORDER BY ticket_count DESC
+      LIMIT 3;
+
+  - question: "List all tickets where the approval status is pending, along with the ticket ID, request title, requested by, and approval status."
+    sql: |
+      SELECT ticket_id, request_title, requested_by, approval_status
+      FROM tickets
+      WHERE approval_status = 'Pending';
+
+  - question: "List all tickets where the 'approval_status' is 'Pending' for more than 7 days, showing the ticket ID, request title, requested by, approval status, and days pending (current date minus created date)."
+    sql: |
+      SELECT ticket_id, request_title, requested_by, approval_status, 
+             (NOW()::DATE - created_date::DATE) AS days_pending
+      FROM tickets
+      WHERE approval_status = 'Pending'
+        AND (NOW()::DATE - created_date::DATE) > 7;
