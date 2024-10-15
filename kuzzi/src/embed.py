@@ -4,6 +4,7 @@ import boto3
 import os
 from dotenv import load_dotenv
 import logging
+from typing import Optional
 
 # Load environment variables from .env file
 load_dotenv()
@@ -35,8 +36,7 @@ class AzureOpenAIEmbedder(Embedder):
 
 # Embedder for AWS Bedrock
 class AWSBedrockEmbedder(Embedder):
-    def __init__(self, model_name: str = "cohere.embed-english-v3"):
-        self.model_name = model_name
+    def __init__(self, model_name: str = None):
         self.bedrock_client = boto3.client(
             service_name="bedrock-runtime",
             region_name=os.getenv("AWS_DEFAULT_REGION"), 
@@ -46,5 +46,14 @@ class AWSBedrockEmbedder(Embedder):
         )
         self.embedder = BedrockEmbeddings(
             client=self.bedrock_client,
-            model_id=self.model_name
+            model_id=model_name or os.getenv("AWS_BEDROCK_EMBEDDINGS_MODEL", "cohere.embed-english-v3")
         )
+
+
+def create_embedder(provider: str, model_name: Optional[str] = None):
+    if provider == 'azure':
+        return AzureOpenAIEmbedder()
+    elif provider == 'bedrock':
+        return AWSBedrockEmbedder(model_name)
+    else:
+        raise ValueError("Invalid provider type")
